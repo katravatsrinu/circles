@@ -1,70 +1,54 @@
 import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
 
 function App() {
   const [circles, setCircles] = useState([]);
-  const [areIntersecting, setAreIntersecting] = useState(false);
+  const [status, setStatus] = useState('Click to create circles (max 2)');
+  const [intersect, setIntersect] = useState(false);
 
-  const getRandomRadius = () => {
-    return Math.floor(Math.random() * (200 - 20 + 1)) + 20;
-  };
+  const getRadius = () => Math.floor(Math.random() * 181) + 20;
 
-  const checkIntersection = (circles) => {
-    if (circles.length !== 2) return false;
+  const checkOverlap = (c1, c2) => {
+    const dist = Math.sqrt((c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2);
 
-    const [circle1, circle2] = circles;
-    const distance = Math.sqrt(
-      Math.pow(circle2.x - circle1.x, 2) + Math.pow(circle1.y - circle2.y, 2)
-    );
-
-    return distance < (circle1.radius + circle2.radius);
+    if (dist <= Math.abs(c1.r - c2.r)) {
+      setIntersect(true);
+      return c1.r > c2.r ? "Second circle is inside the first" : "First circle is inside the second";
+    } else if (dist < c1.r + c2.r) {
+      setIntersect(true);
+      return "Circles overlap";
+    } else if (dist === c1.r + c2.r) {
+      setIntersect(true);
+      return "Circles touch";
+    } else {
+      setIntersect(false);
+      return "Circles are separate";
+    }
   };
 
   const handleClick = (e) => {
-    const newCircle = {
-      x: e.clientX,
-      y: e.clientY,
-      radius: getRandomRadius(),
-    };
+    const newCircle = { x: e.clientX, y: e.clientY, r: getRadius() };
+    let newCircles = [...circles, newCircle];
 
-    const updatedCircles = [...circles, newCircle];
-
-    if (updatedCircles.length > 2) {
-      setCircles([]);
-      setAreIntersecting(false);
-      return;
+    if (newCircles.length > 2) {
+      newCircles = [newCircle];
+      setStatus('Click to create circles (max 2)');
+      setIntersect(false);
+    } else if (newCircles.length === 2) {
+      setStatus(checkOverlap(newCircles[0], newCircles[1]));
     }
 
-    setCircles(updatedCircles);
-    setAreIntersecting(checkIntersection(updatedCircles));
+    setCircles(newCircles);
   };
 
   return (
-    <div 
-      className={`min-vh-100 w-100 position-relative d-flex align-items-center justify-content-center ${areIntersecting ? 'bg-danger' : 'bg-white'}`}
-      style={{ cursor: 'crosshair' }}
-      onClick={handleClick}
-    >
-      {circles.map((circle, index) => (
-        <div
-          key={index}
-          className="position-absolute border border-primary rounded-circle"
-          style={{
-            left: circle.x,
-            top: circle.y,
-            width: circle.radius * 2,
-            height: circle.radius * 2,
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(0, 123, 255, 0.2)', // Light blue fill color for circles
-          }}
-        />
+    <div className={`canvas ${intersect ? 'intersecting' : ''}`} onClick={handleClick}>
+      {circles.map((c, i) => (
+        <div key={i} className="circle" style={{ left: c.x, top: c.y, width: c.r * 2, height: c.r * 2 }} />
       ))}
-      <div className="position-absolute top-0 start-0 m-3 p-3 bg-light rounded shadow">
-        <p className="text-dark mb-1">Click anywhere to create circles (max 2)</p>
-        <p className={`fw-bold ${areIntersecting ? 'text-danger' : 'text-success'}`}>
-          Status: {areIntersecting ? 'Circles are intersecting!' : 'No intersection'}
-        </p>
-        <p className="text-dark">Circles: {circles.length}/2</p>
+      <div className="info">
+        <p>{status}</p>
+        <p>Circles: {circles.length}/2</p>
       </div>
     </div>
   );
